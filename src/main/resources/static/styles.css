@@ -12,6 +12,19 @@ body {
     animation: glowHeader 2s infinite alternate;
 }
 
+#searchBar {
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  color: #181c24;
+  box-shadow: 0 0 10px rgba(65, 105, 225, 0.2);
+  transition: all 0.3s;
+}
+
+#searchBar:focus {
+  border: 1.5px solid #4169e1;
+  box-shadow: 0 0 0.25rem #4169e1a0;
+}
+
 @keyframes glowHeader {
     0% { text-shadow: 0 0 8px #4169e1, 0 0 24px #27408b;}
     100% { text-shadow: 0 0 20px #4169e1, 0 0 40px #27408b;}

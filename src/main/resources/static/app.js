@@ -159,5 +159,28 @@ window.deleteNote=async function(id,btn){
     }catch(e){ console.error(e); }
 };
 
+let allNotes = [];
+
+async function fetchNotes() {
+  try {
+    const res = await fetch(API_URL);
+    const notes = await res.json();
+    allNotes = notes; // store all notes globally
+    renderNotes(allNotes);
+  } catch (e) {
+    console.error(e);
+    renderNotes([]);
+  }
+}
+
+document.getElementById('searchBar').addEventListener('input', function() {
+  const query = this.value.toLowerCase();
+  const filtered = allNotes.filter(note =>
+    note.title.toLowerCase().includes(query) ||
+    note.content.toLowerCase().includes(query)
+  );
+  renderNotes(filtered);
+});
+
 // Initial load
 fetchNotes();
