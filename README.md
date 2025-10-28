@@ -17,7 +17,7 @@ A simple and stylish **Notes Application** built using **Spring Boot**, **MongoD
 - **Backend:** Java, Spring Boot
 - **Database:** MongoDB
 - **Frontend:** HTML, CSS (Glassmorphism + Neon Buttons), JavaScript
-- **Build Tool:** Maven
+- **Build Tool:** Maven  
 - **Dependency Management:** Spring Boot Starter
 
 ---
