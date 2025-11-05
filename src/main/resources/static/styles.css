@@ -171,7 +171,28 @@ body {
         max-width: 100%;
     }
 }
+#searchInput {
+    background: rgba(35, 41, 58, 0.8);
+    border: 1.5px solid rgba(65, 105, 225, 0.3);
+    border-radius: 10px;
+    color: #e3e7ee;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    box-shadow: 0 4px 18px rgba(65, 105, 225, 0.15);
+    transition: all 0.3s ease-in-out;
+    width: 50%;
+}
 
+#searchInput:focus {
+    border-color: #4169e1;
+    box-shadow: 0 0 10px #4169e1a0;
+    outline: none;
+    background: rgba(35, 41, 58, 0.9);
+}
+
+#searchInput::placeholder {
+    color: #b0b6c2;
+}
 ::-webkit-input-placeholder { color: #adb5bd; }
 ::-moz-placeholder { color: #adb5bd; }
 :-ms-input-placeholder { color: #adb5bd; }
