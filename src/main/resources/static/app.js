@@ -1,48 +1,60 @@
 const API_URL = "/api/notes";
+let allNotes = [];
 
-// Helper functions
-function showError(input, message) {
-    input.classList.add('is-invalid');
-    let errorDiv = input.parentElement.querySelector('.invalid-feedback');
-    if (errorDiv) errorDiv.textContent = message;
-}
-function clearError(input) {
-    input.classList.remove('is-invalid');
-    let errorDiv = input.parentElement.querySelector('.invalid-feedback');
-    if (errorDiv) errorDiv.textContent = '';
-}
+document.addEventListener("DOMContentLoaded", () => {
+    fetchNotes();
 
-// Fetch notes
+    // 🔍 Search Event
+    const searchInput = document.getElementById("searchInput");
+    searchInput.addEventListener("input", e => {
+        const query = e.target.value.toLowerCase().trim();
+        if (!query) {
+            renderNotes(allNotes);
+            return;
+        }
+        const filtered = allNotes.filter(note =>
+            (note.title && note.title.toLowerCase().includes(query)) ||
+            (note.content && note.content.toLowerCase().includes(query))
+        );
+        renderNotes(filtered);
+    });
+});
+
 async function fetchNotes() {
     try {
         const res = await fetch(API_URL);
-        const notes = await res.json();
-        renderNotes(notes);
-    } catch (e) {
-        console.error(e);
-        renderNotes([]);
+        allNotes = await res.json();
+
+        // Sort notes by title alphabetically
+        allNotes.sort((a, b) =>
+            (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base" })
+        );
+
+        renderNotes(allNotes);
+    } catch (err) {
+        console.error("Error fetching notes:", err);
     }
 }
 
-// Render notes
 function renderNotes(notes) {
-    const container = document.getElementById('notesContainer');
-    container.innerHTML = '';
-    if (!Array.isArray(notes) || notes.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted">No notes yet.</div>`;
+    const container = document.getElementById("notesContainer");
+    container.innerHTML = "";
+    if (!notes || notes.length === 0) {
+        container.innerHTML = `<div class="text-center text-muted">No notes found.</div>`;
         return;
     }
+
     notes.forEach(note => {
-        const col = document.createElement('div');
-        col.className = 'col-md-6';
+        const col = document.createElement("div");
+        col.className = "col-md-6";
         col.innerHTML = `
             <div class="note-card card h-100">
                 <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">${escape(note.title)}</h5>
-                    <p class="card-text flex-grow-1">${escape(note.content)}</p>
+                    <h5 class="card-title">${note.title || ""}</h5>
+                    <p class="card-text flex-grow-1">${note.content || ""}</p>
                     <div class="card-actions">
-                        <button class="btn btn-edit btn-sm" onclick="openEditModal('${escapeJS(note.id)}', '${escapeJS(note.title)}', '${escapeJS(note.content)}')">Edit</button>
-                        <button class="btn btn-delete btn-sm" onclick="deleteNote('${escapeJS(note.id)}', this)">Delete</button>
+                        <button class="btn btn-edit btn-sm" onclick="openEditModal('${note.id}', '${note.title}', '${note.content}')">Edit</button>
+                        <button class="btn btn-delete btn-sm" onclick="deleteNote('${note.id}', this)">Delete</button>
                     </div>
                 </div>
             </div>
@@ -51,136 +63,51 @@ function renderNotes(notes) {
     });
 }
 
-// Escape functions
-function escape(str) {
-    return (str || '').replace(/[&<>"'`]/g, function(m) {
-        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'})[m];
-    });
-}
-function escapeJS(str) {
-    return (str || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n');
-}
-
-// Add note
-document.getElementById('noteForm').addEventListener('submit', async function(e){
+document.getElementById("noteForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const titleInput = document.getElementById('noteTitle');
-    const contentInput = document.getElementById('noteContent');
-    let title = titleInput.value.trim();
-    let content = contentInput.value.trim();
-    let valid = true;
-    if(!title){ showError(titleInput,'Title cannot be empty.'); valid=false; } else { clearError(titleInput); }
-    if(!content){ showError(contentInput,'Content cannot be empty.'); valid=false; } else { clearError(contentInput); }
-    if(!valid) return;
-    try{
-        await fetch(API_URL,{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({title,content})
-        });
-        titleInput.value=''; contentInput.value='';
-        fetchNotes();
-        showAddAnimation();
-    }catch(e){ console.error(e); }
+    const title = document.getElementById("noteTitle").value.trim();
+    const content = document.getElementById("noteContent").value.trim();
+
+    if (!title || !content) return alert("Please fill in both title and content!");
+
+    await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content })
+    });
+
+    document.getElementById("noteTitle").value = "";
+    document.getElementById("noteContent").value = "";
+    fetchNotes();
 });
 
-// Add animation
-function showAddAnimation(){
-    setTimeout(()=>{
-        const cards=document.querySelectorAll('.note-card');
-        if(cards.length){ cards[0].style.boxShadow='0 0 36px #00c6ff99';
-            setTimeout(()=>{ cards[0].style.boxShadow=''; },600);
-        }
-    },400);
-}
+let editModal = new bootstrap.Modal(document.getElementById("editNoteModal"));
 
-// Edit modal
-let editModal=new bootstrap.Modal(document.getElementById('editNoteModal'));
-window.openEditModal=function(id,title,content){
-    document.getElementById('editNoteId').value=id;
-    document.getElementById('editNoteTitle').value=title;
-    document.getElementById('editNoteContent').value=content;
-    clearError(document.getElementById('editNoteTitle'));
-    clearError(document.getElementById('editNoteContent'));
+window.openEditModal = (id, title, content) => {
+    document.getElementById("editNoteId").value = id;
+    document.getElementById("editNoteTitle").value = title;
+    document.getElementById("editNoteContent").value = content;
     editModal.show();
 };
 
-// Save edit
-document.getElementById('editNoteForm').addEventListener('submit', async function(e){
+document.getElementById("editNoteForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const id=document.getElementById('editNoteId').value;
-    const titleInput=document.getElementById('editNoteTitle');
-    const contentInput=document.getElementById('editNoteContent');
-    let title=titleInput.value.trim();
-    let content=contentInput.value.trim();
-    let valid=true;
-    if(!title){ showError(titleInput,'Title cannot be empty.'); valid=false; } else { clearError(titleInput); }
-    if(!content){ showError(contentInput,'Content cannot be empty.'); valid=false; } else { clearError(contentInput); }
-    if(!valid) return;
-    try{
-        await fetch(`${API_URL}/${id}`,{
-            method:'PUT',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({title,content})
-        });
-        editModal.hide();
-        fetchNotes();
-        showEditAnimation(id);
-    }catch(e){ console.error(e); }
+    const id = document.getElementById("editNoteId").value;
+    const title = document.getElementById("editNoteTitle").value.trim();
+    const content = document.getElementById("editNoteContent").value.trim();
+
+    await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content })
+    });
+
+    editModal.hide();
+    fetchNotes();
 });
 
-// Edit animation
-function showEditAnimation(noteId){
-    setTimeout(()=>{
-        const cards=document.querySelectorAll('.note-card');
-        for(let card of cards){
-            if(card.querySelector('button.btn-edit').getAttribute('onclick').includes(noteId)){
-                card.style.transform='scale(1.04)';
-                card.style.boxShadow='0 0 40px #4169e199';
-                setTimeout(()=>{ card.style.transform=''; card.style.boxShadow=''; },600);
-                break;
-            }
-        }
-    },400);
-}
-
-// Delete
-window.deleteNote=async function(id,btn){
-    if(!confirm('Delete this note?')) return;
-    try{
-        const card=btn.closest('.note-card');
-        card.style.transition='opacity 0.4s, transform 0.3s';
-        card.style.opacity='0';
-        card.style.transform='scale(0.8) translateY(30px)';
-        setTimeout(async ()=>{
-            await fetch(`${API_URL}/${id}`,{method:'DELETE'});
-            fetchNotes();
-        },350);
-    }catch(e){ console.error(e); }
+window.deleteNote = async (id, btn) => {
+    if (!confirm("Delete this note?")) return;
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    fetchNotes();
 };
-
-let allNotes = [];
-
-async function fetchNotes() {
-  try {
-    const res = await fetch(API_URL);
-    const notes = await res.json();
-    allNotes = notes; // store all notes globally
-    renderNotes(allNotes);
-  } catch (e) {
-    console.error(e);
-    renderNotes([]);
-  }
-}
-
-document.getElementById('searchBar').addEventListener('input', function() {
-  const query = this.value.toLowerCase();
-  const filtered = allNotes.filter(note =>
-    note.title.toLowerCase().includes(query) ||
-    note.content.toLowerCase().includes(query)
-  );
-  renderNotes(filtered);
-});
-
-// Initial load
-fetchNotes();
